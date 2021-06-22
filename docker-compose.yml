@@ -1,0 +1,71 @@
+#compatible for Raspberry Pi 4
+#w/ remote.it
+
+version: '3'
+
+services:
+  db:
+    image: jsurf/rpi-mariadb:latest
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=CXPDawE5QwmwWEtCRgK9
+    env_file:
+      - db.env
+
+  redis:
+    image: redis:6.2.4-alpine3.13
+    restart: always
+    security_opt:
+      - seccomp=unconfined
+
+  app:
+    build: ./app
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - MYSQL_HOST=db
+      - REDIS_HOST=redis
+      - NEXTCLOUD_TRUSTED_DOMAINS='*.rt3.io' 'raspberrypi.local'
+      - OVERWRITEHOST=raspberrypi.local:8080
+      - OVERWRITEPROTOCOL=http
+    env_file:
+      - db.env
+    depends_on:
+      - db
+      - redis
+    security_opt:
+      - seccomp=unconfined
+
+  web:
+    build: ./web
+    restart: always
+    ports:
+      - 8080:80
+    volumes:
+      - nextcloud:/var/www/html:ro
+    depends_on:
+      - app
+    security_opt:
+      - seccomp=unconfined
+
+
+  cron:
+    image: nextcloud:stable-fpm-alpine
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
+    security_opt:
+      - seccomp=unconfined
+
+volumes:
+  db:
+  nextcloud:
+
