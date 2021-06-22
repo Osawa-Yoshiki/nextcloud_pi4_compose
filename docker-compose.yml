@@ -1,7 +1,7 @@
 #compatible for Raspberry Pi 4
 #w/ remote.it
 
-version: '3'
+version: '2'
 
 services:
   db:
